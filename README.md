@@ -7,3 +7,9 @@ Here is the code for Hello World in Python:
 ```{python}
 print("Hello World")
 ```
+
+Here is the code for Hello World in R (same thing):
+```{r}
+print("Hello World")
+```
+
