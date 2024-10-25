@@ -1,0 +1,244 @@
+---
+title: "Sakila "
+subtitle: <center> <h1>In-Class Analysis</h1> </center>
+format: 
+  html:
+    embed-resources: true 
+---
+```{r}
+library(tidyverse)
+```
+
++----------------------------+
+| Tables In Sakila           |
++----------------------------+
+| actor                      |
+| actor_info                 |
+| address                    |
+| category                   |
+| city                       |
+| country                    |
+| customer                   |
+| customer_list              |
+| film                       |
+| film_actor                 |
+| film_category              |
+| film_list                  |
+| film_text                  |
+| inventory                  |
+| language                   |
+| nicer_but_slower_film_list |
+| payment                    |
+| rental                     |
+| sales_by_film_category     |
+| sales_by_store             |
+| staff                      |
+| staff_list                 |
+| store                      |
++----------------------------+
+```{r}
+df <- data.frame(
+  Genre = c("Sports", "Sci-Fi", "Animation", "Drama", "Comedy", 
+            "Action", "New", "Games", "Foreign", "Family", 
+            "Documentary", "Horror", "Children", "Classics", 
+            "Travel", "Music"),
+  Revenue = c(5314.21, 4756.98, 4656.30, 4587.39, 4383.58, 
+             4375.85, 4351.62, 4281.33, 4270.67, 4226.07, 
+             4217.52, 3722.54, 3655.55, 3639.59, 3549.64, 3417.72)
+)
+```
+```{r}
+ggplot(df, aes(x = reorder(Genre, -Revenue), y = Revenue)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = scales::dollar(Revenue)), vjust = -0.5, size = 2) +  # Add labels with prices
+  labs(title = "Revenue by Genre",
+       x = "Genre",
+       y = "Revenue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r, include = F}
+df <- read.table("rentals_by_film.txt", 
+                 sep = "|", 
+                 header = FALSE,  # No actual header, so set to FALSE
+                 skip = 1,
+                 fill = TRUE,     # Fill missing values if rows have unequal lengths
+                 stringsAsFactors = FALSE)
+
+# Select only the columns with actual data (excluding the first and last empty columns)
+df <- df[, 2:5]
+
+# Assign proper column names
+colnames(df) <- c("title", "rental_count", "rental_rate", "length")
+
+# Clean up any extra spaces
+df <- lapply(df, trimws)  # Trim whitespace
+df <- as.data.frame(df)   # Convert back to dataframe
+
+# Convert numeric columns to their correct types
+df$rental_count <- as.numeric(df$rental_count)
+df$rental_rate <- as.numeric(df$rental_rate)
+df$length <- as.numeric(df$length)
+
+write.csv(df, "rentals_by_film.csv", row.names = FALSE)
+```
+
+```{r}
+ren <- read_csv("rentals_by_film.csv", col_types = "cifd")
+ren$rental_rate <- factor(ren$rental_rate, levels = c(4.99, 2.99, 0.99))
+ren
+```
+```{r}
+rental_plot <- ggplot(data = ren, mapping = aes(x = length, y = rental_count, color = rental_rate)) + 
+  geom_point() + 
+  labs(x = "Length of Movie (min)", 
+       y = "Number of Times Rented",
+       color = "Rental Rate", 
+       title = "Is Rental Count Affected by Movie Length? (2006)") +
+  
+  scale_color_manual(values = c("4.99" = "indianred3", "2.99" = "darkgoldenrod1", "0.99" = "dodgerblue"))
+rental_plot
+```
+```{r}
+counts_table <- table(ren$rental_count)
+counts_df <- as.data.frame(counts_table)
+colnames(counts_df) <- c("value", "count")
+print(counts_df)
+```
+
+
+```{r}
+ggplot(data = counts_df, aes(x = value, y = count)) + 
+  geom_bar(stat = "identity", fill = "steelblue") +
+  scale_x_discrete(breaks = seq(4, 34, by = 2)) +
+  labs(x = "Movie's Rental Numbers", 
+       y = "Frequency",
+       title = "Number of Rentals per Movie") +
+  theme_minimal()
+```
+
+
+
+
+
+```{r, include = F}
+df1 <- read.table("rentals_customers_countries.txt", 
+                 sep = "|", 
+                 header = FALSE,
+                 skip = 2,
+                 fill = TRUE,
+                 stringsAsFactors = FALSE)
+
+# Select only the columns with actual data (excluding the first and last empty columns)
+df <- df1[, 2:3]
+colnames(df) <- c("country", "rental_count")
+
+# Clean up any extra spaces
+df <- lapply(df, trimws)  # Trim whitespace
+df <- as.data.frame(df)   # Convert back to dataframe
+# Convert numeric columns to their correct types
+df$rental_count <- as.numeric(df$rental_count)
+
+write.csv(df, "rentals_by_customer_and_country.csv", row.names = FALSE)
+```
+```{r}
+ren2 <- read_csv("rentals_by_customer_and_country.csv", col_types = "ci")
+ren2
+```
+```{r}
+ggplot(data = ren2[1:20,], aes(x = reorder(country, -rental_count), y = rental_count)) + 
+  geom_bar(stat = "identity", fill = "indianred3") +
+  geom_text(aes(label = rental_count), vjust = -0.5, size = 2)+
+  scale_x_discrete() +
+  labs(x = "Country", 
+       y = "Rental Counts",
+       title = "Top 20 Countries") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+
+
+
+```{r, include = F}
+cus_sales <- read.table("customer_sales.txt", 
+                 sep = "|", 
+                 header = FALSE,
+                 skip = 2,
+                 fill = TRUE,
+                 stringsAsFactors = FALSE)
+
+# Select only the columns with actual data (excluding the first and last empty columns)
+cus_sales <- cus_sales[, 2:5]
+colnames(cus_sales) <- c("customer_id", "first_name", "last_name", "total_sales")
+
+# Clean up any extra spaces
+cus_sales <- lapply(cus_sales, trimws)  # Trim whitespace
+cus_sales <- as.data.frame(cus_sales)   # Convert back to dataframe
+cus_sales$total_sales <- as.double(cus_sales$total_sales)
+
+write.csv(cus_sales, "customer_sales.csv", row.names = FALSE)
+cus_sales
+```
+```{r}
+cus_sales$fullname <- paste(cus_sales$first_name, cus_sales$last_name)
+cus_sales
+```
+
+
+```{r}
+ggplot(data = cus_sales[1:15,], aes(x = reorder(fullname, -total_sales), y = total_sales)) + 
+  geom_bar(stat = "identity", fill = "indianred3") +
+  geom_text(aes(label = scales::dollar(total_sales)), vjust = -0.5, size = 2)+
+  scale_x_discrete() +
+  labs(x = "Customer", 
+       y = "Total Sales",
+       title = "Top 15 Customers") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+cus_info <- read.table("customer_info.txt", 
+                 sep = "|", 
+                 header = FALSE,
+                 skip = 2,
+                 fill = TRUE,
+                 stringsAsFactors = FALSE)
+
+# Select only the columns with actual data (excluding the first and last empty columns)
+cus_info <- cus_info[, 2:10]
+colnames(cus_info) <- c("customer_id", "first_name", "last_name", "total_sales",
+                         "movies_rented", "store_id", "country", 
+                         "district", "city")
+
+# Clean up any extra spaces
+cus_info <- lapply(cus_info, trimws)  # Trim whitespace
+cus_info <- as.data.frame(cus_info)   # Convert back to dataframe
+cus_info$fullname <- paste(cus_info$first_name, cus_info$last_name)
+cus_info$total_sales <- as.double(cus_info$total_sales)
+cus_info$store_id <- as.factor(cus_info$store_id)
+cus_info$movies_rented <- as.integer(cus_info$movies_rented)
+
+cus_info <- cus_info[, c("customer_id", "fullname", "total_sales", 
+                         "movies_rented", "store_id", "country", 
+                         "district", "city")]
+cus_info
+
+write.csv(cus_info, "customer_info.csv", row.names = FALSE)
+```
+```{r}
+customer_plot <- ggplot(data = cus_info, mapping = aes(x = total_sales, y = movies_rented, color = store_id)) + 
+  geom_point() + 
+  labs(x = "Total Sales ($)", 
+       y = "Number of Movies Rented",
+       color = "Store ID", 
+       title = "Customer Sales Total and Movies Rented compared with Store Location") +
+  
+  scale_color_manual(values = c("1" = "indianred3", "2" = "dodgerblue"))
+customer_plot
+```
+
+
